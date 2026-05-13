@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Gender = "boy" | "girl";
 type ThemeId = "little-bear";
@@ -20,8 +20,8 @@ const initial: Payload = {
   v: 2,
   gender: "girl",
   theme: "little-bear",
-  beforeMessage: "タップしてね",
-  revealMessage: "It's a Girl!",
+  beforeMessage: "赤ちゃんからお知らせがあります",
+  revealMessage: "性別がわかりました",
   finalMessage: "これからもよろしくね♡",
 };
 
@@ -55,7 +55,13 @@ function fromB64url(input: string): Uint8Array {
 
 async function deriveKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 150000 }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations: 150000 },
+    base,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
 }
 
 async function encryptPayload(payload: Payload, secret: string): Promise<string> {
@@ -113,14 +119,21 @@ export default function Page() {
   }, []);
 
   const makeUrl = async () => {
+    if (!secret.trim()) {
+      setErr("合言葉を入力してください。");
+      return;
+    }
     setErr("");
-    const token = await encryptPayload(data, secret);
-    setResultUrl(`${window.location.origin}${window.location.pathname}#d=${token}&k=${encodeURIComponent(secret)}`);
+    const token = await encryptPayload(data, secret.trim());
+    setResultUrl(`${window.location.origin}${window.location.pathname}#d=${token}&k=${encodeURIComponent(secret.trim())}`);
   };
 
   const proceed = () => {
     setStage((prev) => (prev === "before" ? "reveal" : "final"));
   };
+
+  const summaryGender = data.gender === "girl" ? "女の子" : "男の子";
+  const previewImage = useMemo(() => stageImage("reveal", data.gender), [data.gender]);
 
   if (viewData) {
     const image = stageImage(stage, viewData.gender);
@@ -128,7 +141,7 @@ export default function Page() {
 
     return (
       <main className="revealView">
-        <section className="imageStage" onClick={proceed} role="button" aria-label="次へ進む">
+        <section className="imageStage" onClick={proceed} role="button" tabIndex={0} onKeyDown={(e) => e.key === "Enter" && proceed()} aria-label="次へ進む">
           <img src={image} alt={`${TEMPLATE.name} ${stage}`} />
           <p className="overlayMessage">{message}</p>
           {stage !== "final" && <span className="tapHint">タップで次へ</span>}
@@ -137,63 +150,86 @@ export default function Page() {
     );
   }
 
-  const previewImage = data.gender === "boy" ? TEMPLATE.images.revealBoy : TEMPLATE.images.revealGirl;
-
   return (
-    <main className="builder">
-      <header>
-        <h1>ジェンダーリビール メッセージ作成</h1>
-        <p>テンプレートは現状 Little Bear のみです。性別選択で見本画像が切り替わります。</p>
-      </header>
+    <main className="builderWrap">
+      <section className="builder">
+        <div className="leftCol">
+          <header>
+            <p className="brand">Surprise Link</p>
+            <h1>ジェンダーリビール メッセージ作成</h1>
+            <p className="lead">テンプレートを選んで、想いを込めたサプライズリンクを作りましょう。</p>
+          </header>
 
-      <section className="templateGrid">
-        <button className="templateCard active" aria-pressed>
-          <strong>{TEMPLATE.name}</strong>
-          <img src={previewImage} alt="テンプレート見本" className="templatePreview" />
-        </button>
-      </section>
+          <section>
+            <h2>1 テンプレートを選ぶ</h2>
+            <button className="templateCard active" aria-pressed>
+              <img src={previewImage} alt="テンプレート見本" className="templatePreview" />
+              <div>
+                <strong>{TEMPLATE.name}</strong>
+                <p>オープン前 / オープン後</p>
+              </div>
+            </button>
+          </section>
 
-      <section className="formPanel">
-        <div className="seg">
-          <label>
-            <input type="radio" name="gender" checked={data.gender === "girl"} onChange={() => setData({ ...data, gender: "girl", revealMessage: "It's a Girl!" })} /> 女の子
-          </label>
-          <label>
-            <input type="radio" name="gender" checked={data.gender === "boy"} onChange={() => setData({ ...data, gender: "boy", revealMessage: "It's a Boy!" })} /> 男の子
-          </label>
+          <section className="formPanel">
+            <h2>2 メッセージを入力する</h2>
+            <label>合言葉（受け取る人に伝えるパスワード）<input value={secret} onChange={(e) => setSecret(e.target.value)} /></label>
+            <label>オープン前メッセージ<input maxLength={50} value={data.beforeMessage} onChange={(e) => setData({ ...data, beforeMessage: e.target.value })} /></label>
+            <label>オープン時メッセージ<input maxLength={50} value={data.revealMessage} onChange={(e) => setData({ ...data, revealMessage: e.target.value })} /></label>
+            <label>最後のメッセージ<input maxLength={50} value={data.finalMessage} onChange={(e) => setData({ ...data, finalMessage: e.target.value })} /></label>
+          </section>
+
+          <section>
+            <h2>3 性別を選ぶ</h2>
+            <div className="seg">
+              <label className={data.gender === "girl" ? "picked girl" : "girl"}>
+                <input type="radio" name="gender" checked={data.gender === "girl"} onChange={() => setData({ ...data, gender: "girl" })} /> 女の子
+              </label>
+              <label className={data.gender === "boy" ? "picked boy" : "boy"}>
+                <input type="radio" name="gender" checked={data.gender === "boy"} onChange={() => setData({ ...data, gender: "boy" })} /> 男の子
+              </label>
+            </div>
+          </section>
+
+          <section className="result">
+            <h2>4 設定を確認して、リンクを生成する</h2>
+            <ul>
+              <li>テンプレート: {TEMPLATE.name}</li>
+              <li>オープン前: {data.beforeMessage}</li>
+              <li>オープン時: {data.revealMessage}</li>
+              <li>最後: {data.finalMessage}</li>
+              <li>性別: {summaryGender}</li>
+            </ul>
+            <button onClick={makeUrl}>リンクを生成する</button>
+            {resultUrl && <textarea readOnly value={resultUrl} rows={3} />}
+            {resultUrl && (
+              <div className="actions">
+                <button
+                  onClick={() =>
+                    navigator.clipboard.writeText(resultUrl).then(() => {
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1400);
+                    })
+                  }
+                >
+                  リンクをコピー
+                </button>
+                {copied && <span>コピーしました</span>}
+                <a href={resultUrl} target="_blank" rel="noreferrer">
+                  プレビューを開く
+                </a>
+              </div>
+            )}
+          </section>
+          {err && <p className="err">{err}</p>}
         </div>
 
-        <label>合言葉（受け取る人に伝えるパスワード）<input value={secret} onChange={(e) => setSecret(e.target.value)} /></label>
-        <label>オープン前メッセージ<input value={data.beforeMessage} onChange={(e) => setData({ ...data, beforeMessage: e.target.value })} /></label>
-        <label>オープン時メッセージ<input value={data.revealMessage} onChange={(e) => setData({ ...data, revealMessage: e.target.value })} /></label>
-        <label>最後のメッセージ<input value={data.finalMessage} onChange={(e) => setData({ ...data, finalMessage: e.target.value })} /></label>
-
-        <button onClick={makeUrl}>リンクを生成する</button>
+        <aside className="rightCol">
+          <h3>プレビュー</h3>
+          <div className="phoneMock"><img src={previewImage} alt="プレビュー画像" /></div>
+          <p>テンプレートごとに、オープン前・後の表示が変わります。</p>
+        </aside>
       </section>
-
-      {resultUrl && (
-        <section className="result">
-          <h2>完成しました！</h2>
-          <textarea readOnly value={resultUrl} rows={3} />
-          <div className="actions">
-            <button
-              onClick={() =>
-                navigator.clipboard.writeText(resultUrl).then(() => {
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1400);
-                })
-              }
-            >
-              リンクをコピー
-            </button>
-            {copied && <span>コピーしました</span>}
-          </div>
-          <a href={resultUrl} target="_blank" rel="noreferrer">
-            このリンクをプレビューする
-          </a>
-        </section>
-      )}
-      {err && <p className="err">{err}</p>}
     </main>
   );
 }
