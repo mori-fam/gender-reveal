@@ -67,8 +67,8 @@
   const token = params.get("d");
   const key = params.get("k");
 
-  if (token && key) {
-    decryptPayload(token, key).then((viewData) => {
+  if (token) {
+    const renderReveal = (viewData) => {
       let stage = "before";
       const render = () => {
         const image = stageImage(stage, viewData.gender);
@@ -83,9 +83,28 @@
         box.addEventListener("keydown", (e) => e.key === "Enter" && proceed());
       };
       render();
-    }).catch(() => {
-      app.innerHTML = '<p class="err">リンクの読み込みに失敗しました。URLを再確認してください。</p>';
-    });
+    };
+
+    app.innerHTML = `<main class="builder"><section class="formPanel"><h2>合言葉を入力してください</h2><label>合言葉<input id="viewSecret" autocomplete="off" /></label><button id="openLinkBtn">開く</button><p id="viewErr" class="err"></p></section></main>`;
+
+    const secretInput = document.getElementById("viewSecret");
+    if (key) secretInput.value = key;
+
+    const open = async () => {
+      const secret = secretInput.value.trim();
+      const errEl = document.getElementById("viewErr");
+      if (!secret) { errEl.textContent = "合言葉を入力してください。"; return; }
+      errEl.textContent = "";
+      try {
+        const viewData = await decryptPayload(token, secret);
+        renderReveal(viewData);
+      } catch {
+        errEl.textContent = "合言葉が違うか、リンクが壊れています。";
+      }
+    };
+
+    document.getElementById("openLinkBtn").addEventListener("click", open);
+    secretInput.addEventListener("keydown", (e) => e.key === "Enter" && open());
     return;
   }
 
@@ -122,7 +141,7 @@
     if (!secret) { errEl.textContent = "合言葉を入力してください。"; return; }
     errEl.textContent = "";
     const tokenData = await encryptPayload(data, secret);
-    const url = `${window.location.origin}${window.location.pathname}#d=${tokenData}&k=${encodeURIComponent(secret)}`;
+    const url = `${window.location.origin}${window.location.pathname}#d=${tokenData}`;
     const txt = document.getElementById("resultUrl");
     txt.style.display = "block";
     txt.value = url;
