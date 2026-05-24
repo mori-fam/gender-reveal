@@ -9,15 +9,20 @@
     finalMessage: "これからもよろしくね♡"
   };
 
+  const basePath = window.location.pathname.endsWith("/")
+    ? window.location.pathname
+    : window.location.pathname.replace(/[^/]+$/, "");
+  const asset = (path) => `${basePath}${path}`;
+
   const TEMPLATE = {
     id: "little-bear",
     name: "Little Bear",
     images: {
-      before: "./templates/little-bear/8FA5978A-E56D-4746-B5DE-5556D6570E0E.png",
-      revealBoy: "./templates/little-bear/71DDF628-BE78-4452-9587-DDA7B12F1D39.png",
-      revealGirl: "./templates/little-bear/3E0737F6-5885-4A2E-8A92-806FE536F459.png",
-      finalBoy: "./templates/little-bear/9A5B6F07-D8AE-4B04-AC20-7E44908E2A46.png",
-      finalGirl: "./templates/little-bear/IMG_1545.png"
+      before: asset("templates/little-bear/8FA5978A-E56D-4746-B5DE-5556D6570E0E.png"),
+      revealBoy: asset("templates/little-bear/71DDF628-BE78-4452-9587-DDA7B12F1D39.png"),
+      revealGirl: asset("templates/little-bear/3E0737F6-5885-4A2E-8A92-806FE536F459.png"),
+      finalBoy: asset("templates/little-bear/9A5B6F07-D8AE-4B04-AC20-7E44908E2A46.png"),
+      finalGirl: asset("templates/little-bear/IMG_1545.png")
     }
   };
 
