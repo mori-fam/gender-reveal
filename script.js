@@ -3,6 +3,7 @@
     v: 2,
     gender: "girl",
     theme: "little-bear",
+    requireSecret: true,
     beforeMessage: "赤ちゃんからお知らせがあります",
     revealMessage: "性別がわかりました",
     finalMessage: "これからもよろしくね♡"
@@ -12,16 +13,17 @@
     id: "little-bear",
     name: "Little Bear",
     images: {
-      before: "./templates/little-bear/open-before.svg",
-      revealBoy: "./templates/little-bear/open-after-boy.svg",
-      revealGirl: "./templates/little-bear/open-after-girl.svg",
-      finalBoy: "./templates/little-bear/final-boy.svg",
-      finalGirl: "./templates/little-bear/final-girl.svg"
+      before: "./templates/little-bear/8FA5978A-E56D-4746-B5DE-5556D6570E0E.png",
+      revealBoy: "./templates/little-bear/71DDF628-BE78-4452-9587-DDA7B12F1D39.png",
+      revealGirl: "./templates/little-bear/3E0737F6-5885-4A2E-8A92-806FE536F459.png",
+      finalBoy: "./templates/little-bear/9A5B6F07-D8AE-4B04-AC20-7E44908E2A46.png",
+      finalGirl: "./templates/little-bear/IMG_1545.png"
     }
   };
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
+  const randomSecret = () => crypto.getRandomValues(new Uint8Array(12)).reduce((s, b) => s + b.toString(16).padStart(2, "0"), "");
 
   const b64url = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
   const fromB64url = (input) => {
@@ -60,6 +62,7 @@
     return gender === "boy" ? TEMPLATE.images.finalBoy : TEMPLATE.images.finalGirl;
   };
 
+
   const stageMessage = (payload, stage) => stage === "before" ? payload.beforeMessage : stage === "reveal" ? payload.revealMessage : payload.finalMessage;
 
   const app = document.getElementById("app");
@@ -85,11 +88,15 @@
       render();
     };
 
+    if (key) {
+      decryptPayload(token, key).then(renderReveal).catch(() => {
+        app.innerHTML = `<main class="builder"><section class="formPanel"><h2>リンクを開けませんでした</h2><p class="err">リンクが壊れている可能性があります。</p></section></main>`;
+      });
+      return;
+    }
+
     app.innerHTML = `<main class="builder"><section class="formPanel"><h2>合言葉を入力してください</h2><label>合言葉<input id="viewSecret" autocomplete="off" /></label><button id="openLinkBtn">開く</button><p id="viewErr" class="err"></p></section></main>`;
-
     const secretInput = document.getElementById("viewSecret");
-    if (key) secretInput.value = key;
-
     const open = async () => {
       const secret = secretInput.value.trim();
       const errEl = document.getElementById("viewErr");
@@ -102,7 +109,6 @@
         errEl.textContent = "合言葉が違うか、リンクが壊れています。";
       }
     };
-
     document.getElementById("openLinkBtn").addEventListener("click", open);
     secretInput.addEventListener("keydown", (e) => e.key === "Enter" && open());
     return;
@@ -113,6 +119,12 @@
   <header><p class="brand">Surprise Link</p><h1>ジェンダーリビール メッセージ作成</h1><p class="lead">テンプレートを選んで、想いを込めたサプライズリンクを作りましょう。</p></header>
   <section><h2>1 テンプレートを選ぶ</h2><button class="templateCard active" aria-pressed><img id="templatePreview" src="${stageImage("reveal", initial.gender)}" alt="テンプレート見本" class="templatePreview" /><div><strong class="templateName">${TEMPLATE.name}</strong></div></button></section>
   <section class="formPanel"><h2>2 メッセージを入力する</h2>
+  <label>合言葉の入力
+    <select id="requireSecret">
+      <option value="yes" selected>あり</option>
+      <option value="no">なし</option>
+    </select>
+  </label>
   <label>合言葉（受け取る人に伝えるパスワード）<input id="secret" value="baby2026" /></label>
   <label>オープン前メッセージ<input id="beforeMessage" maxlength="50" value="${initial.beforeMessage}" /></label>
   <label>オープン時メッセージ<input id="revealMessage" maxlength="50" value="${initial.revealMessage}" /></label>
@@ -127,20 +139,24 @@
     document.getElementById("boyLabel").className = data.gender === "boy" ? "picked boy" : "boy";
     const preview = stageImage("reveal", data.gender);
     document.getElementById("templatePreview").src = preview;
-    document.getElementById("summary").innerHTML = `<li>テンプレート: ${TEMPLATE.name}</li><li>オープン前: ${data.beforeMessage}</li><li>オープン時: ${data.revealMessage}</li><li>最後: ${data.finalMessage}</li><li>性別: ${data.gender === "girl" ? "女の子" : "男の子"}</li>`;
+    document.getElementById("requireSecret").value = data.requireSecret ? "yes" : "no";
+    document.getElementById("secret").disabled = !data.requireSecret;
+    document.getElementById("summary").innerHTML = `<li>テンプレート: ${TEMPLATE.name}</li><li>オープン前: ${data.beforeMessage}</li><li>オープン時: ${data.revealMessage}</li><li>最後: ${data.finalMessage}</li><li>性別: ${data.gender === "girl" ? "女の子" : "男の子"}</li><li>合言葉入力: ${data.requireSecret ? "あり" : "なし"}</li>`;
   };
   update();
 
   ["beforeMessage","revealMessage","finalMessage"].forEach((id) => document.getElementById(id).addEventListener("input", (e) => { data[id] = e.target.value; update(); }));
+  document.getElementById("requireSecret").addEventListener("change", (e) => { data.requireSecret = e.target.value === "yes"; update(); });
   document.querySelectorAll('input[name="gender"]').forEach((el) => el.addEventListener("change", (e) => { data.gender = e.target.value; update(); }));
-
   document.getElementById("generateBtn").addEventListener("click", async () => {
-    const secret = document.getElementById("secret").value.trim();
+    const secret = data.requireSecret ? document.getElementById("secret").value.trim() : randomSecret();
     const errEl = document.getElementById("err");
-    if (!secret) { errEl.textContent = "合言葉を入力してください。"; return; }
+    if (data.requireSecret && !secret) { errEl.textContent = "合言葉を入力してください。"; return; }
     errEl.textContent = "";
     const tokenData = await encryptPayload(data, secret);
-    const url = `${window.location.origin}${window.location.pathname}#d=${tokenData}`;
+    const url = data.requireSecret
+      ? `${window.location.origin}${window.location.pathname}#d=${tokenData}`
+      : `${window.location.origin}${window.location.pathname}#d=${tokenData}&k=${secret}`;
     const txt = document.getElementById("resultUrl");
     txt.style.display = "block";
     txt.value = url;
