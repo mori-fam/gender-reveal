@@ -124,12 +124,11 @@
   <header><p class="brand">Surprise Link</p><h1>ジェンダーリビール メッセージ作成</h1><p class="lead">テンプレートを選んで、想いを込めたサプライズリンクを作りましょう。</p></header>
   <section><h2>1 テンプレートを選ぶ</h2><button class="templateCard active" aria-pressed><img id="templatePreview" src="${stageImage("reveal", initial.gender)}" alt="テンプレート見本" class="templatePreview" /><div><strong class="templateName">${TEMPLATE.name}</strong></div></button></section>
   <section class="formPanel"><h2>2 メッセージを入力する</h2>
-  <label>合言葉の入力
-    <select id="requireSecret">
-      <option value="yes" selected>あり</option>
-      <option value="no">なし</option>
-    </select>
-  </label>
+  <fieldset class="inlineChoices">
+    <legend>合言葉の入力</legend>
+    <label><input type="radio" name="requireSecret" value="yes" checked /> あり</label>
+    <label><input type="radio" name="requireSecret" value="no" /> なし</label>
+  </fieldset>
   <label>合言葉（受け取る人に伝えるパスワード）<input id="secret" value="baby2026" /></label>
   <label>オープン前メッセージ<input id="beforeMessage" maxlength="50" value="${initial.beforeMessage}" /></label>
   <label>オープン時メッセージ<input id="revealMessage" maxlength="50" value="${initial.revealMessage}" /></label>
@@ -144,14 +143,20 @@
     document.getElementById("boyLabel").className = data.gender === "boy" ? "picked boy" : "boy";
     const preview = stageImage("reveal", data.gender);
     document.getElementById("templatePreview").src = preview;
-    document.getElementById("requireSecret").value = data.requireSecret ? "yes" : "no";
+    const requireSecretValue = data.requireSecret ? "yes" : "no";
+    document.querySelectorAll('input[name="requireSecret"]').forEach((el) => {
+      el.checked = el.value === requireSecretValue;
+    });
     document.getElementById("secret").disabled = !data.requireSecret;
     document.getElementById("summary").innerHTML = `<li>テンプレート: ${TEMPLATE.name}</li><li>オープン前: ${data.beforeMessage}</li><li>オープン時: ${data.revealMessage}</li><li>最後: ${data.finalMessage}</li><li>性別: ${data.gender === "girl" ? "女の子" : "男の子"}</li><li>合言葉入力: ${data.requireSecret ? "あり" : "なし"}</li>`;
   };
   update();
 
   ["beforeMessage","revealMessage","finalMessage"].forEach((id) => document.getElementById(id).addEventListener("input", (e) => { data[id] = e.target.value; update(); }));
-  document.getElementById("requireSecret").addEventListener("change", (e) => { data.requireSecret = e.target.value === "yes"; update(); });
+  document.querySelectorAll('input[name="requireSecret"]').forEach((el) => el.addEventListener("change", (e) => {
+    data.requireSecret = e.target.value === "yes";
+    update();
+  }));
   document.querySelectorAll('input[name="gender"]').forEach((el) => el.addEventListener("change", (e) => { data.gender = e.target.value; data.revealMessage = data.gender === "boy" ? "It\'s a Boy!" : "It\'s a Girl!"; document.getElementById("revealMessage").value = data.revealMessage; update(); }));
   document.getElementById("generateBtn").addEventListener("click", async () => {
     const secret = data.requireSecret ? document.getElementById("secret").value.trim() : randomSecret();
