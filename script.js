@@ -69,6 +69,7 @@
 
 
   const stageMessage = (payload, stage) => stage === "before" ? payload.beforeMessage : stage === "reveal" ? payload.revealMessage : payload.finalMessage;
+  const normalizeMessage = (text) => text.replace(/\r\n?/g, "\n");
 
   const app = document.getElementById("app");
   const params = new URLSearchParams(window.location.hash.slice(1));
@@ -81,7 +82,8 @@
       const render = () => {
         const image = stageImage(stage, viewData.gender);
         const message = stageMessage(viewData, stage);
-        app.innerHTML = `<main class="revealView"><section class="imageStage" data-stage="${stage}" role="button" tabindex="0" aria-label="次へ進む"><img src="${image}" alt="${TEMPLATE.name} ${stage}" /><p class="overlayMessage">${message}</p>${stage !== "final" ? '<span class="tapHint">タップで次へ</span>' : ""}</section></main>`;
+        app.innerHTML = `<main class="revealView"><section class="imageStage" data-stage="${stage}" role="button" tabindex="0" aria-label="次へ進む"><img src="${image}" alt="${TEMPLATE.name} ${stage}" /><p class="overlayMessage"></p>${stage !== "final" ? '<span class="tapHint">タップで次へ</span>' : ""}</section></main>`;
+        app.querySelector(".overlayMessage").textContent = message;
         const box = app.querySelector(".imageStage");
         const proceed = () => {
           stage = stage === "before" ? "reveal" : "final";
@@ -130,9 +132,9 @@
     <label><input type="radio" name="requireSecret" value="no" /> なし</label>
   </fieldset>
   <label>合言葉（受け取る人に伝えるパスワード）<input id="secret" value="baby2026" /></label>
-  <label>オープン前メッセージ<input id="beforeMessage" maxlength="50" value="${initial.beforeMessage}" /></label>
-  <label>オープン時メッセージ<input id="revealMessage" maxlength="50" value="${initial.revealMessage}" /></label>
-  <label>最後のメッセージ<input id="finalMessage" maxlength="50" value="${initial.finalMessage}" /></label></section>
+  <label>オープン前メッセージ<span class="limitNote">※ 最大50文字</span><textarea id="beforeMessage" maxlength="50" rows="2">${initial.beforeMessage}</textarea></label>
+  <label>オープン後メッセージ<span class="limitNote">※ 最大50文字</span><textarea id="revealMessage" maxlength="50" rows="2">${initial.revealMessage}</textarea></label>
+  <label>最後のメッセージ<span class="limitNote">※ 最大100文字</span><textarea id="finalMessage" maxlength="100" rows="3">${initial.finalMessage}</textarea></label></section>
   <section><h2>3 性別を選ぶ</h2><div class="seg"><label id="boyLabel" class="picked boy"><input type="radio" name="gender" value="boy" checked /> 男の子</label><label id="girlLabel" class="girl"><input type="radio" name="gender" value="girl" /> 女の子</label></div></section>
   <section class="result"><h2>4 設定を確認して、リンクを生成する</h2><ul id="summary"></ul><button id="generateBtn">リンクを生成する</button><textarea id="resultUrl" readonly rows="3" style="display:none"></textarea><div id="actions" class="actions" style="display:none"><button id="copyBtn">リンクをコピー</button><span id="copied" style="display:none">コピーしました</span><a id="previewLink" href="#" target="_blank" rel="noreferrer">プレビューを開く</a></div></section>
   <p id="err" class="err"></p></div></section>`;
@@ -148,11 +150,15 @@
       el.checked = el.value === requireSecretValue;
     });
     document.getElementById("secret").disabled = !data.requireSecret;
-    document.getElementById("summary").innerHTML = `<li>テンプレート: ${TEMPLATE.name}</li><li>オープン前: ${data.beforeMessage}</li><li>オープン時: ${data.revealMessage}</li><li>最後: ${data.finalMessage}</li><li>性別: ${data.gender === "girl" ? "女の子" : "男の子"}</li><li>合言葉入力: ${data.requireSecret ? "あり" : "なし"}</li>`;
+    document.getElementById("summary").innerHTML = `<li>テンプレート: ${TEMPLATE.name}</li><li>オープン前: </li><li>オープン後: </li><li>最後: </li><li>性別: ${data.gender === "girl" ? "女の子" : "男の子"}</li><li>合言葉入力: ${data.requireSecret ? "あり" : "なし"}</li>`;
+    const summaryItems = document.querySelectorAll("#summary li");
+    summaryItems[1].append(document.createTextNode(data.beforeMessage));
+    summaryItems[2].append(document.createTextNode(data.revealMessage));
+    summaryItems[3].append(document.createTextNode(data.finalMessage));
   };
   update();
 
-  ["beforeMessage","revealMessage","finalMessage"].forEach((id) => document.getElementById(id).addEventListener("input", (e) => { data[id] = e.target.value; update(); }));
+  ["beforeMessage","revealMessage","finalMessage"].forEach((id) => document.getElementById(id).addEventListener("input", (e) => { data[id] = normalizeMessage(e.target.value); update(); }));
   document.querySelectorAll('input[name="requireSecret"]').forEach((el) => el.addEventListener("change", (e) => {
     data.requireSecret = e.target.value === "yes";
     update();
