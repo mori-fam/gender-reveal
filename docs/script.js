@@ -81,7 +81,7 @@
       const render = () => {
         const image = stageImage(stage, viewData.gender);
         const message = stageMessage(viewData, stage);
-        app.innerHTML = `<main class="revealView"><section class="imageStage" role="button" tabindex="0" aria-label="次へ進む"><img src="${image}" alt="${TEMPLATE.name} ${stage}" /><p class="overlayMessage">${message}</p>${stage !== "final" ? '<span class="tapHint">タップで次へ</span>' : ""}</section></main>`;
+        app.innerHTML = `<main class="revealView"><section class="imageStage" data-stage="${stage}" role="button" tabindex="0" aria-label="次へ進む"><img src="${image}" alt="${TEMPLATE.name} ${stage}" /><p class="overlayMessage">${message}</p>${stage !== "final" ? '<span class="tapHint">タップで次へ</span>' : ""}</section></main>`;
         const box = app.querySelector(".imageStage");
         const proceed = () => {
           stage = stage === "before" ? "reveal" : "final";
@@ -133,7 +133,7 @@
   <label>オープン前メッセージ<input id="beforeMessage" maxlength="50" value="${initial.beforeMessage}" /></label>
   <label>オープン時メッセージ<input id="revealMessage" maxlength="50" value="${initial.revealMessage}" /></label>
   <label>最後のメッセージ<input id="finalMessage" maxlength="50" value="${initial.finalMessage}" /></label></section>
-  <section><h2>3 性別を選ぶ</h2><div class="seg"><label id="girlLabel" class="picked girl"><input type="radio" name="gender" value="girl" /> 女の子</label><label id="boyLabel" class="boy"><input type="radio" name="gender" value="boy" checked /> 男の子</label></div></section>
+  <section><h2>3 性別を選ぶ</h2><div class="seg"><label id="boyLabel" class="picked boy"><input type="radio" name="gender" value="boy" checked /> 男の子</label><label id="girlLabel" class="girl"><input type="radio" name="gender" value="girl" /> 女の子</label></div></section>
   <section class="result"><h2>4 設定を確認して、リンクを生成する</h2><ul id="summary"></ul><button id="generateBtn">リンクを生成する</button><textarea id="resultUrl" readonly rows="3" style="display:none"></textarea><div id="actions" class="actions" style="display:none"><button id="copyBtn">リンクをコピー</button><span id="copied" style="display:none">コピーしました</span><a id="previewLink" href="#" target="_blank" rel="noreferrer">プレビューを開く</a></div></section>
   <p id="err" class="err"></p></div></section>`;
 
