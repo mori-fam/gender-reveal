@@ -9,10 +9,15 @@
     finalMessage: "これからもよろしくね♡"
   };
 
-  const basePath = window.location.pathname.endsWith("/")
-    ? window.location.pathname
-    : window.location.pathname.replace(/[^/]+$/, "");
-  const asset = (path) => `${basePath}${path}`;
+  const CUSTOM_DOMAIN = "gender-reveal.jp";
+  const CUSTOM_ORIGIN = `https://${CUSTOM_DOMAIN}`;
+  const scriptUrl = new URL(document.currentScript?.getAttribute("src") || "./script.js", window.location.href);
+  const appBasePath = scriptUrl.pathname.replace(/[^/]*$/, "");
+  const asset = (path) => new URL(path, `${window.location.origin}${appBasePath}`).toString();
+  const shareBaseUrl = () => {
+    const path = window.location.hostname === CUSTOM_DOMAIN ? appBasePath : "/";
+    return new URL(path, CUSTOM_ORIGIN).toString();
+  };
 
   const TEMPLATE = {
     id: "little-bear",
@@ -170,9 +175,10 @@
     if (data.requireSecret && !secret) { errEl.textContent = "合言葉を入力してください。"; return; }
     errEl.textContent = "";
     const tokenData = await encryptPayload(data, secret);
+    const baseUrl = shareBaseUrl();
     const url = data.requireSecret
-      ? `${window.location.origin}${window.location.pathname}#d=${tokenData}`
-      : `${window.location.origin}${window.location.pathname}#d=${tokenData}&k=${secret}`;
+      ? `${baseUrl}#d=${tokenData}`
+      : `${baseUrl}#d=${tokenData}&k=${secret}`;
     const txt = document.getElementById("resultUrl");
     txt.style.display = "block";
     txt.value = url;
