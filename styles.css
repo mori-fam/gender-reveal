@@ -9,6 +9,7 @@ main{min-height:100vh}
 .brand{color:#cc9386;font-style:italic;margin:0}
 header h1{font-size:clamp(34px,5vw,58px);margin:.2rem 0;line-height:1.2}
 .lead{margin:0;color:#6d5348}
+.seoCopy{margin:8px 0 0;color:#7a5d52;font-size:15px;line-height:1.7}
 h2{font-size:28px;margin:0 0 10px}
 h3{font-size:28px;margin:0}
 
