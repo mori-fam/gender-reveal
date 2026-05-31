@@ -128,7 +128,7 @@
 
   app.innerHTML = `
   <section class="builder"><div class="leftCol">
-  <header><p class="brand">Surprise Link</p><h1>ジェンダーリビール メッセージ作成</h1><p class="lead">テンプレートを選んで、想いを込めたサプライズリンクを作りましょう。</p></header>
+  <header><p class="brand">Surprise Link</p><h1>LINEで送れる無料オンライン ジェンダーリビールカード</h1><p class="lead">遠方の家族や友人にも、かわいいジェンダーリビールカードをオンラインで作成してLINEなどで簡単に共有できます。</p><p class="seoCopy">家族への性別発表や、遠方に住む方へのジェンダーリビールを無料で準備できます。</p></header>
   <section><h2>1 テンプレートを選ぶ</h2><button class="templateCard active" aria-pressed><img id="templatePreview" src="${stageImage("reveal", initial.gender)}" alt="テンプレート見本" class="templatePreview" /><div><strong class="templateName">${TEMPLATE.name}</strong></div></button></section>
   <section class="formPanel"><h2>2 メッセージを入力する</h2>
   <fieldset class="inlineChoices">
